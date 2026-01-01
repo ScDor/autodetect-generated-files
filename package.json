@@ -46,16 +46,6 @@
             "linguist-generated"
           ],
           "description": "List of .gitattributes keys to check. If a file has one of these attributes set, it is marked as generated."
-        },
-        "autodetectGenerated.badge": {
-          "type": "string",
-          "default": "G",
-          "description": "The 1-2 character badge to show in the explorer."
-        },
-        "autodetectGenerated.color": {
-          "type": "string",
-          "default": "charts.yellow",
-          "description": "Theme color identifier for the badge."
         }
       }
     }

@@ -3,19 +3,33 @@ import * as cp from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 
-export class GeneratedFileDecorationProvider implements vscode.FileDecorationProvider {
-	private _onDidChangeFileDecorations: vscode.EventEmitter<vscode.Uri | undefined> = new vscode.EventEmitter<
-		vscode.Uri | undefined
-	>();
-	readonly onDidChangeFileDecorations: vscode.Event<vscode.Uri | undefined> = this._onDidChangeFileDecorations.event;
-
+export class GeneratedFileDecorationProvider {
 	private regexPatterns: RegExp[] = [];
 	private gitAttributes: string[] = [];
-	private badge: string = 'G';
-	private color: string = 'charts.yellow';
 
 	// Simple cache: Uri.toString() -> boolean (isGenerated)
 	private cache: Map<string, boolean> = new Map();
+
+	getGeneratedFiles(): string[] {
+		const generated: string[] = [];
+		for (const [uriStr, isGenerated] of this.cache.entries()) {
+			if (isGenerated) {
+				try {
+					const uri = vscode.Uri.parse(uriStr);
+					const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+					if (workspaceFolder) {
+						const relativePath = path.relative(workspaceFolder.uri.fsPath, uri.fsPath);
+						generated.push(relativePath);
+					} else {
+						generated.push(uri.fsPath);
+					}
+				} catch (e) {
+					// skip
+				}
+			}
+		}
+		return generated;
+	}
 
 	constructor() {
 		this.loadConfig();
@@ -32,59 +46,43 @@ export class GeneratedFileDecorationProvider implements vscode.FileDecorationPro
 			return acc;
 		}, [] as RegExp[]);
 		this.gitAttributes = config.get<string[]>('gitAttributes') || [];
-		this.badge = config.get<string>('badge') || 'G';
-		this.color = config.get<string>('color') || 'charts.yellow';
 		this.cache.clear();
 	}
 
 	refresh() {
 		this.loadConfig();
-		this._onDidChangeFileDecorations.fire(undefined);
 	}
 
 	update(uri: vscode.Uri) {
 		this.cache.delete(uri.toString());
-		this._onDidChangeFileDecorations.fire(uri);
 	}
 
-	async provideFileDecoration(uri: vscode.Uri): Promise<vscode.FileDecoration | undefined> {
+	async checkAndCache(uri: vscode.Uri): Promise<boolean> {
 		if (uri.scheme !== 'file') {
-			return undefined;
+			return false;
 		}
 
 		const key = uri.toString();
 		if (this.cache.has(key)) {
-			if (this.cache.get(key)) {
-				return this.getDecoration();
-			}
-			return undefined;
+			return this.cache.get(key) || false;
 		}
 
-		// Determine if generated
 		const isGenerated = await this.checkFile(uri);
 		this.cache.set(key, isGenerated);
 
 		if (isGenerated) {
-			return this.getDecoration();
+			vscode.commands.executeCommand('autodetect-generated.syncReadOnly');
 		}
-		return undefined;
-	}
-
-	private getDecoration(): vscode.FileDecoration {
-		return new vscode.FileDecoration(this.badge, 'Generated File', new vscode.ThemeColor(this.color));
+		return isGenerated;
 	}
 
 	private async checkFile(uri: vscode.Uri): Promise<boolean> {
-		// 1. Check Git Attributes
 		if (await this.checkGitAttributes(uri)) {
 			return true;
 		}
-
-		// 2. Check Content
 		if (await this.checkContent(uri)) {
 			return true;
 		}
-
 		return false;
 	}
 
