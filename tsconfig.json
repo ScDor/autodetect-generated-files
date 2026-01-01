@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "target": "es2020",
+    "outDir": "out",
+    "rootDir": "src",
+    "lib": [
+      "es2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": true
+  },
+  "exclude": [
+    "node_modules",
+    ".vscode-test",
+    "playground",
+    "out"
+  ],
+  "include": [
+    "src/**/*"
+  ]
+}
