@@ -3,6 +3,7 @@
   "displayName": "Autodetect Generated Files",
   "description": "Automatically marks generated files based on regex or .gitattributes.",
   "publisher": "local",
+  "license": "MIT",
   "version": "0.0.1",
   "type": "module",
   "engines": {
@@ -58,8 +59,9 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src",
-    "format": "prettier --write \"src/**/*.ts\"",
-    "prek": "npm run lint && npm run format && npm run test"
+    "format": "prettier --check \"src/**/*.ts\"",
+    "format:fix": "prettier --write \"src/**/*.ts\"",
+    "prek": "npm run lint && npm run format:fix && npm run test"
   },
   "lint-staged": {
     "src/**/*.ts": [
