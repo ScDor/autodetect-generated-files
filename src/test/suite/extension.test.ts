@@ -74,7 +74,10 @@ describe('Extension Lifecycle', () => {
 		expect(vscode.workspace.onDidChangeConfiguration).toHaveBeenCalled();
 		expect(vscode.workspace.createFileSystemWatcher).toHaveBeenCalledWith('**/*');
 		expect(vscode.window.onDidChangeActiveTextEditor).toHaveBeenCalled();
-		expect(vscode.commands.registerCommand).toHaveBeenCalledWith('autodetect-generated.syncReadOnly', expect.any(Function));
+		expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
+			'autodetect-generated.syncReadOnly',
+			expect.any(Function),
+		);
 
 		// Check subscriptions
 		expect(context.subscriptions.length).toBeGreaterThan(0);
