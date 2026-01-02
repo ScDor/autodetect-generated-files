@@ -85,9 +85,7 @@ export class GeneratedFileDecorationProvider {
 	private async checkFile(uri: vscode.Uri): Promise<boolean> {
 		if (this.excludePatterns.length > 0) {
 			const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
-			const relativePath = workspaceFolder
-				? path.relative(workspaceFolder.uri.fsPath, uri.fsPath)
-				: uri.fsPath;
+			const relativePath = workspaceFolder ? path.relative(workspaceFolder.uri.fsPath, uri.fsPath) : uri.fsPath;
 
 			for (const pattern of this.excludePatterns) {
 				const regex = new RegExp(pattern.replace(/\*/g, '.*').replace(/\?/g, '.'));
