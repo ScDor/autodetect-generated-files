@@ -1,0 +1,3 @@
+{
+    "autodetectGenerated.excludePatterns": ["excluded_in_settings.js"]
+}

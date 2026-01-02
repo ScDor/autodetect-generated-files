@@ -47,6 +47,24 @@
             "linguist-generated"
           ],
           "description": "List of .gitattributes keys to check. If a file has one of these attributes set, it is marked as generated."
+        },
+        "autodetectGenerated.excludePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "List of glob patterns to exclude from being marked as generated, even if they match other criteria."
+        },
+        "autodetectGenerated.maxSearchLines": {
+          "type": "number",
+          "default": 5,
+          "description": "Maximum number of lines to search for regex patterns in the beginning of the file. Set to 0 to disable line-based limiting and rely only on character limit."
+        },
+        "autodetectGenerated.maxSearchChars": {
+          "type": "number",
+          "default": 1024,
+          "description": "Maximum number of characters to search for regex patterns in the beginning of the file. Set to 0 to search the entire file."
         }
       }
     }

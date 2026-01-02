@@ -6,6 +6,9 @@ import * as fs from 'fs';
 export class GeneratedFileDecorationProvider {
 	private regexPatterns: RegExp[] = [];
 	private gitAttributes: string[] = [];
+	private excludePatterns: string[] = [];
+	private maxSearchLines: number = 5;
+	private maxSearchChars: number = 1024;
 
 	// Simple cache: Uri.toString() -> boolean (isGenerated)
 	private cache: Map<string, boolean> = new Map();
@@ -46,6 +49,9 @@ export class GeneratedFileDecorationProvider {
 			return acc;
 		}, [] as RegExp[]);
 		this.gitAttributes = config.get<string[]>('gitAttributes') || [];
+		this.excludePatterns = config.get<string[]>('excludePatterns') || [];
+		this.maxSearchLines = config.get<number>('maxSearchLines') ?? 5;
+		this.maxSearchChars = config.get<number>('maxSearchChars') ?? 1024;
 		this.cache.clear();
 	}
 
@@ -77,6 +83,20 @@ export class GeneratedFileDecorationProvider {
 	}
 
 	private async checkFile(uri: vscode.Uri): Promise<boolean> {
+		if (this.excludePatterns.length > 0) {
+			const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+			const relativePath = workspaceFolder
+				? path.relative(workspaceFolder.uri.fsPath, uri.fsPath)
+				: uri.fsPath;
+
+			for (const pattern of this.excludePatterns) {
+				const regex = new RegExp(pattern.replace(/\*/g, '.*').replace(/\?/g, '.'));
+				if (regex.test(relativePath)) {
+					return false;
+				}
+			}
+		}
+
 		if (await this.checkGitAttributes(uri)) {
 			return true;
 		}
@@ -129,14 +149,27 @@ export class GeneratedFileDecorationProvider {
 		try {
 			let text = '';
 			if (uri.scheme === 'file') {
-				const fd = await fs.promises.open(uri.fsPath, 'r');
-				const buffer = Buffer.alloc(2048);
-				const { bytesRead } = await fd.read(buffer, 0, 2048, 0);
-				await fd.close();
-				text = buffer.slice(0, bytesRead).toString('utf-8');
+				if (this.maxSearchChars <= 0) {
+					text = await fs.promises.readFile(uri.fsPath, 'utf-8');
+				} else {
+					const fd = await fs.promises.open(uri.fsPath, 'r');
+					const buffer = Buffer.alloc(this.maxSearchChars);
+					const { bytesRead } = await fd.read(buffer, 0, this.maxSearchChars, 0);
+					await fd.close();
+					text = buffer.slice(0, bytesRead).toString('utf-8');
+				}
 			} else {
 				const uint8Array = await vscode.workspace.fs.readFile(uri);
-				text = new TextDecoder('utf-8').decode(uint8Array.slice(0, 2048));
+				if (this.maxSearchChars <= 0) {
+					text = new TextDecoder('utf-8').decode(uint8Array);
+				} else {
+					text = new TextDecoder('utf-8').decode(uint8Array.slice(0, this.maxSearchChars));
+				}
+			}
+
+			if (this.maxSearchLines > 0) {
+				const lines = text.split('\n');
+				text = lines.slice(0, this.maxSearchLines).join('\n');
 			}
 
 			for (const regex of this.regexPatterns) {
